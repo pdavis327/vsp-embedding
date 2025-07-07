@@ -1,0 +1,38 @@
+apiVersion: machine.openshift.io/v1beta1
+kind: MachineSet
+metadata:
+  labels:
+    machine.openshift.io/cluster-api-cluster: cluster-name
+  name: cluster-name-gpu
+  namespace: openshift-machine-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      machine.openshift.io/cluster-api-cluster: cluster-name
+      machine.openshift.io/cluster-api-machineset: cluster-name-gpu
+  template:
+    metadata:
+      labels:
+        machine.openshift.io/cluster-api-cluster: cluster-name
+        machine.openshift.io/cluster-api-machine-role: worker
+        machine.openshift.io/cluster-api-machine-type: worker
+        machine.openshift.io/cluster-api-machineset: cluster-name-gpu
+    spec:
+      metadata:
+        labels:
+          node-role.kubernetes.io/worker: ""
+      providerSpec:
+        value:
+          apiVersion: awsproviderconfig.openshift.io/v1beta1
+          kind: AWSMachineProviderConfig
+          instanceType: g4dn.xlarge
+          ami:
+            id: ami-xxxxxxxx
+          tags:
+            - name: kubernetes.io/cluster/cluster-name
+              value: owned
+          iamInstanceProfile:
+            id: cluster-name-worker-profile
+          userDataSecret:
+            name: worker-user-data

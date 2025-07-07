@@ -1,0 +1,2 @@
+oc new-build --name arrow-custom-image --strategy docker --binary --context-dir . -n redhat-ods-applications -l opendatahub.io/notebook-image=true
+oc start-build arrow-custom-image --from-dir . --follow --no-cache -n redhat-ods-applications

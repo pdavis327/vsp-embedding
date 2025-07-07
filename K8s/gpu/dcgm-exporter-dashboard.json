@@ -1,0 +1,18 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "DCGM Exporter Dashboard",
+    "tags": ["gpu", "nvidia"],
+    "timezone": "browser",
+    "panels": [],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "timepicker": {},
+    "templating": {
+      "list": []
+    },
+    "refresh": "30s"
+  }
+}

@@ -1,0 +1,10 @@
+kfp>=2.0.0
+pandas
+numpy
+scikit-learn
+matplotlib
+seaborn
+python-dotenv
+joblib
+requests
+boto3

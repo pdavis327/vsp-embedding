@@ -1,0 +1,12 @@
+apiVersion: kubeflow.org/v1
+kind: Profile
+metadata:
+  name: nvidia-gpu-profile
+spec:
+  owner:
+    kind: User
+    name: demo-user
+  resourceQuotaSpec:
+    hard:
+      requests.nvidia.com/gpu: "1"
+      limits.nvidia.com/gpu: "1"
