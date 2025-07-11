@@ -1,17 +1,17 @@
 # PIPELINE DEFINITION
-# Name: electronics-embedding-pipeline
-# Description: Electronics parts country of origin prediction using BGE-Large embeddings
+# Name: vsp-eyeglass-frame-pipeline
+# Description: VSP eyeglass frame style prediction using BGE-Large embeddings
 # Inputs:
 #    api_key: str [Default: '']
-#    bucket_name: str [Default: 'pipeline']
-#    data_filename: str [Default: 'synthetic_electronics_parts_1k.csv']
-#    embedding_model: str [Default: '']
-#    endpoint: str [Default: '']
-#    minio_access_key: str [Default: '']
-#    minio_endpoint: str [Default: '']
-#    minio_secret_key: str [Default: '']
+#    bucket_name: str [Default: 'vsp']
+#    data_filename: str [Default: 'synthetic_eyeglass_frames_1k.csv']
+#    embedding_model: str [Default: 'bge-large']
+#    endpoint: str [Default: 'https://bge-large-arrow-embedding.apps.cluster-5qlcr.5qlcr.sandbox1342.opentlc.com']
+#    minio_access_key: str [Default: 'admin']
+#    minio_endpoint: str [Default: 'https://minio-api-default.apps.cluster-5qlcr.5qlcr.sandbox1342.opentlc.com']
+#    minio_secret_key: str [Default: 'aeadmin123']
 #    predictions_output_filename: str [Default: 'predictions_output.csv']
-#    unseen_data_filename: str [Default: 'unseen_electronics_parts.csv']
+#    unseen_data_filename: str [Default: 'unseen_eyeglass_frames.csv']
 components:
   comp-evaluate-model:
     executorLabel: exec-evaluate-model
@@ -186,43 +186,35 @@ deploymentSpec:
           \ *\n\ndef evaluate_model(\n    test_results: Input[Dataset],\n    label_encoder:\
           \ Input[Model],\n    minio_endpoint: str,\n    minio_access_key: str,\n\
           \    minio_secret_key: str,\n    bucket_name: str,\n    confusion_matrix_plot:\
-          \ Output[Dataset],\n):\n    \"\"\"Evaluate model and generate visualizations\"\
+          \ Output[Dataset],\n):\n    \"\"\"Evaluate model and create visualizations\"\
           \"\"\n    import pickle\n    import numpy as np\n    import matplotlib.pyplot\
           \ as plt\n    import seaborn as sns\n    from sklearn.metrics import confusion_matrix,\
-          \ classification_report\n    import boto3\n\n    # Load test results and\
-          \ label encoder\n    with open(test_results.path, \"rb\") as f:\n      \
-          \  test_data = pickle.load(f)\n\n    with open(label_encoder.path, \"rb\"\
-          ) as f:\n        label_encoder_obj = pickle.load(f)\n\n    y_test = np.array(test_data[\"\
-          y_test\"])\n    y_pred = np.array(test_data[\"y_pred\"])\n    accuracy =\
-          \ test_data[\"accuracy\"]\n\n    class_names = label_encoder_obj.classes_\n\
-          \n    print(f\"Model Performance:\")\n    print(f\"   - Accuracy: {accuracy:.1%}\"\
-          )\n\n    # Show detailed results\n    print(\"\\nDetailed Classification\
-          \ Report:\")\n    print(classification_report(y_test, y_pred, target_names=class_names))\n\
-          \n    # Setup MinIO client\n    s3_client = boto3.client(\n        \"s3\"\
-          ,\n        endpoint_url=minio_endpoint,\n        aws_access_key_id=minio_access_key,\n\
+          \ classification_report\n    import boto3\n    import os\n\n    # Load test\
+          \ results and label encoder\n    with open(test_results.path, \"rb\") as\
+          \ f:\n        test_data = pickle.load(f)\n\n    with open(label_encoder.path,\
+          \ \"rb\") as f:\n        label_encoder_obj = pickle.load(f)\n\n    X_test\
+          \ = np.array(test_data[\"X_test\"])\n    y_test = np.array(test_data[\"\
+          y_test\"])\n    y_pred = np.array(test_data[\"y_pred\"])\n    class_names\
+          \ = test_data[\"class_names\"]\n\n    print(f\"Evaluation on {len(X_test)}\
+          \ test samples\")\n    print(f\"Frame styles: {class_names}\")\n\n    #\
+          \ Create confusion matrix\n    cm = confusion_matrix(y_test, y_pred)\n\n\
+          \    # Plot confusion matrix\n    plt.figure(figsize=(12, 10))\n    sns.heatmap(\n\
+          \        cm,\n        annot=True,\n        fmt=\"d\",\n        cmap=\"Blues\"\
+          ,\n        xticklabels=class_names,\n        yticklabels=class_names,\n\
+          \    )\n    plt.title(\"Confusion Matrix - VSP Eyeglass Frame Style Prediction\"\
+          )\n    plt.xlabel(\"Predicted Frame Style\")\n    plt.ylabel(\"Actual Frame\
+          \ Style\")\n    plt.xticks(rotation=45, ha=\"right\")\n    plt.yticks(rotation=0)\n\
+          \    plt.tight_layout()\n\n    # Save plot\n    plot_path = \"/tmp/confusion_matrix.png\"\
+          \n    plt.savefig(plot_path, dpi=300, bbox_inches=\"tight\")\n    plt.close()\n\
+          \n    # Upload to MinIO\n    s3_client = boto3.client(\n        \"s3\",\n\
+          \        endpoint_url=minio_endpoint,\n        aws_access_key_id=minio_access_key,\n\
           \        aws_secret_access_key=minio_secret_key,\n        verify=False,\n\
-          \    )\n\n    # Create confusion matrix\n    if len(class_names) > 1:\n\
-          \        cm = confusion_matrix(y_test, y_pred)\n\n        plt.figure(figsize=(8,\
-          \ 6))\n        sns.heatmap(\n            cm,\n            annot=True,\n\
-          \            fmt=\"d\",\n            cmap=\"Blues\",\n            xticklabels=class_names,\n\
-          \            yticklabels=class_names,\n        )\n        plt.title(\"Confusion\
-          \ Matrix - Country of Origin Prediction\")\n        plt.xlabel(\"Predicted\
-          \ Country\")\n        plt.ylabel(\"Actual Country\")\n        plt.xticks(rotation=45)\n\
-          \        plt.tight_layout()\n\n        # Save locally first\n        local_plot_path\
-          \ = \"/tmp/confusion_matrix.png\"\n        plt.savefig(local_plot_path,\
-          \ dpi=150, bbox_inches=\"tight\")\n        plt.savefig(confusion_matrix_plot.path,\
-          \ dpi=150, bbox_inches=\"tight\")\n        plt.close()\n\n        # Upload\
-          \ to MinIO\n        s3_client.upload_file(\n            local_plot_path,\
-          \ bucket_name, \"outputs/confusion_matrix.png\"\n        )\n\n        print(\"\
-          Confusion matrix saved to MinIO\")\n\n    # Save evaluation report to MinIO\n\
-          \    eval_report = classification_report(y_test, y_pred, target_names=class_names)\n\
-          \    local_report_path = \"/tmp/evaluation_report.txt\"\n    with open(local_report_path,\
-          \ \"w\") as f:\n        f.write(f\"Model Performance:\\n\")\n        f.write(f\"\
-          Accuracy: {accuracy:.1%}\\n\\n\")\n        f.write(\"Detailed Classification\
-          \ Report:\\n\")\n        f.write(eval_report)\n\n    s3_client.upload_file(\n\
-          \        local_report_path, bucket_name, \"outputs/evaluation_report.txt\"\
-          \n    )\n\n    print(\"Evaluation complete - results saved to MinIO outputs\
-          \ folder\")\n\n"
+          \    )\n\n    s3_client.upload_file(\n        plot_path, bucket_name, \"\
+          results/confusion_matrix.png\"\n    )\n\n    # Save plot path\n    with\
+          \ open(confusion_matrix_plot.path, \"w\") as f:\n        f.write(plot_path)\n\
+          \n    # Print classification report\n    print(\"\\nClassification Report:\"\
+          )\n    print(classification_report(y_test, y_pred, target_names=class_names))\n\
+          \n    print(\"Model evaluation complete\")\n\n"
         image: registry.redhat.io/ubi8/python-39:latest
     exec-generate-embeddings:
       container:
@@ -314,18 +306,18 @@ deploymentSpec:
           \        aws_secret_access_key=minio_secret_key,\n        verify=False,\n\
           \    )\n\n    # Download data from MinIO\n    local_data_path = \"/tmp/input_data.csv\"\
           \n    s3_client.download_file(bucket_name, f\"data/{data_filename}\", local_data_path)\n\
-          \n    # Load the synthetic electronics data\n    df = pd.read_csv(local_data_path)\n\
+          \n    # Load the synthetic eyeglass frame data\n    df = pd.read_csv(local_data_path)\n\
           \n    print(f\"Loaded {len(df)} records from MinIO bucket {bucket_name}\"\
           )\n    print(f\"Columns: {list(df.columns)}\")\n\n    # Prepare labels\n\
           \    label_encoder_obj = LabelEncoder()\n    y = label_encoder_obj.fit_transform(df[\"\
-          Country_Of_Origin\"])\n    class_names = label_encoder_obj.classes_\n\n\
-          \    print(f\"Number of countries: {len(class_names)}\")\n    print(f\"\
-          Countries: {list(class_names)}\")\n\n    # Save processed data and encoder\n\
-          \    df.to_csv(processed_data.path, index=False)\n\n    with open(label_encoder.path,\
-          \ \"wb\") as f:\n        pickle.dump(label_encoder_obj, f)\n\n    with open(labels.path,\
-          \ \"wb\") as f:\n        pickle.dump(y, f)\n\n    # Save descriptions for\
-          \ embedding generation\n    descriptions_list = df[\"Part_Description\"\
-          ].tolist()\n    with open(descriptions.path, \"wb\") as f:\n        pickle.dump(descriptions_list,\
+          Frame_Style\"])\n    class_names = label_encoder_obj.classes_\n\n    print(f\"\
+          Number of frame styles: {len(class_names)}\")\n    print(f\"Frame styles:\
+          \ {list(class_names)}\")\n\n    # Save processed data and encoder\n    df.to_csv(processed_data.path,\
+          \ index=False)\n\n    with open(label_encoder.path, \"wb\") as f:\n    \
+          \    pickle.dump(label_encoder_obj, f)\n\n    with open(labels.path, \"\
+          wb\") as f:\n        pickle.dump(y, f)\n\n    # Save descriptions for embedding\
+          \ generation\n    descriptions_list = df[\"Frame_Description\"].tolist()\n\
+          \    with open(descriptions.path, \"wb\") as f:\n        pickle.dump(descriptions_list,\
           \ f)\n\n    print(\"Data preparation complete\")\n\n"
         image: registry.redhat.io/ubi8/python-39:latest
     exec-predict-on-unseen-data:
@@ -359,23 +351,24 @@ deploymentSpec:
           \   label_encoder: Input[Model],\n    minio_endpoint: str,\n    minio_access_key:\
           \ str,\n    minio_secret_key: str,\n    bucket_name: str,\n    unseen_data_filename:\
           \ str,\n    predictions_output_filename: str,\n    endpoint: str,\n    embedding_model:\
-          \ str,\n    api_key: str,\n):\n    \"\"\"Load unseen data, generate embeddings,\
-          \ make predictions, and save results to MinIO\"\"\"\n    import pandas as\
-          \ pd\n    import numpy as np\n    import pickle\n    import joblib\n   \
-          \ import requests\n    import json\n    import boto3\n\n    # Setup MinIO\
-          \ client\n    s3_client = boto3.client(\n        \"s3\",\n        endpoint_url=minio_endpoint,\n\
-          \        aws_access_key_id=minio_access_key,\n        aws_secret_access_key=minio_secret_key,\n\
-          \        verify=False,\n    )\n\n    # Download unseen data from MinIO\n\
-          \    local_data_path = \"/tmp/unseen_data.csv\"\n    s3_client.download_file(bucket_name,\
-          \ f\"data/{unseen_data_filename}\", local_data_path)\n\n    # Load the unseen\
-          \ data\n    df = pd.read_csv(local_data_path)\n    print(f\"Loaded {len(df)}\
-          \ unseen records for prediction\")\n    print(f\"Columns: {list(df.columns)}\"\
-          )\n\n    # Extract descriptions for embedding generation\n    descriptions_list\
-          \ = df[\"Part_Description\"].tolist()\n    print(f\"Generating embeddings\
-          \ for {len(descriptions_list)} descriptions...\")\n\n    # Generate embeddings\
-          \ via API call\n    headers = {\"Authorization\": f\"Bearer {api_key}\"\
-          , \"Content-Type\": \"application/json\"}\n    embeddings_list = []\n\n\
-          \    for desc in descriptions_list:\n        payload = {\"model\": embedding_model,\
+          \ str,\n    api_key: str,\n):\n    \"\"\"Make predictions on unseen eyeglass\
+          \ frame data\"\"\"\n    import pickle\n    import numpy as np\n    import\
+          \ pandas as pd\n    import requests\n    import json\n    import joblib\n\
+          \    import boto3\n\n    # Setup MinIO client\n    s3_client = boto3.client(\n\
+          \        \"s3\",\n        endpoint_url=minio_endpoint,\n        aws_access_key_id=minio_access_key,\n\
+          \        aws_secret_access_key=minio_secret_key,\n        verify=False,\n\
+          \    )\n\n    # Download unseen data from MinIO\n    local_data_path = \"\
+          /tmp/unseen_data.csv\"\n    s3_client.download_file(bucket_name, f\"data/{unseen_data_filename}\"\
+          , local_data_path)\n\n    # Load unseen data\n    unseen_df = pd.read_csv(local_data_path)\n\
+          \    print(f\"Loaded {len(unseen_df)} unseen frame descriptions\")\n\n \
+          \   # Load trained model and label encoder\n    knn = joblib.load(trained_model.path)\n\
+          \    with open(label_encoder.path, \"rb\") as f:\n        label_encoder_obj\
+          \ = pickle.load(f)\n\n    class_names = label_encoder_obj.classes_\n\n \
+          \   # Generate embeddings for unseen data\n    descriptions = unseen_df[\"\
+          Frame_Description\"].tolist()\n    print(f\"Generating embeddings for {len(descriptions)}\
+          \ unseen descriptions...\")\n\n    headers = {\"Authorization\": f\"Bearer\
+          \ {api_key}\", \"Content-Type\": \"application/json\"}\n    embeddings_list\
+          \ = []\n\n    for desc in descriptions:\n        payload = {\"model\": embedding_model,\
           \ \"input\": desc}\n\n        response = requests.post(\n            f\"\
           {endpoint}/v1/embeddings\", headers=headers, json=payload, verify=False\n\
           \        )\n\n        if response.status_code == 200:\n            result\
@@ -383,27 +376,26 @@ deploymentSpec:
           ]\n            embeddings_list.append(embedding)\n        else:\n      \
           \      print(f\"Error generating embedding: {response.status_code}\")\n\
           \            raise Exception(f\"Failed to generate embedding for: {desc[:50]}...\"\
-          )\n\n    if not embeddings_list:\n        raise Exception(\"Failed to generate\
-          \ embeddings for unseen data\")\n\n    X_unseen = np.array(embeddings_list)\n\
-          \    print(f\"Generated embeddings with shape: {X_unseen.shape}\")\n\n \
-          \   # Load trained model and label encoder\n    knn_model = joblib.load(trained_model.path)\n\
-          \n    with open(label_encoder.path, \"rb\") as f:\n        label_encoder_obj\
-          \ = pickle.load(f)\n\n    # Make predictions\n    print(\"Making predictions...\"\
-          )\n    y_pred_encoded = knn_model.predict(X_unseen)\n    y_pred_labels =\
-          \ label_encoder_obj.inverse_transform(y_pred_encoded)\n\n    # Get prediction\
-          \ probabilities/distances for confidence scoring\n    distances, _ = knn_model.kneighbors(X_unseen)\n\
-          \    confidence_scores = 1 / (1 + distances.mean(axis=1))  # Convert distances\
-          \ to confidence scores\n\n    print(f\"Predictions complete for {len(y_pred_labels)}\
-          \ samples\")\n\n    # Create predictions dataframe\n    predictions_df =\
-          \ df.copy()\n    predictions_df[\"Predicted_Country_Of_Origin\"] = y_pred_labels\n\
-          \    predictions_df[\"Confidence_Score\"] = confidence_scores\n\n    # Save\
-          \ predictions locally first\n    local_predictions_path = \"/tmp/predictions.csv\"\
-          \n    predictions_df.to_csv(local_predictions_path, index=False)\n\n   \
-          \ # Upload predictions to MinIO\n    s3_client.upload_file(\n        local_predictions_path,\
-          \ bucket_name, f\"data/{predictions_output_filename}\"\n    )\n\n    print(f\"\
-          Predictions saved to MinIO: data/{predictions_output_filename}\")\n    print(f\"\
-          Predicted countries distribution:\")\n    for country, count in pd.Series(y_pred_labels).value_counts().head(10).items():\n\
-          \        print(f\"   - {country}: {count}\")\n\n"
+          )\n\n    if embeddings_list:\n        X_unseen = np.array(embeddings_list)\n\
+          \        print(f\"Generated embeddings with shape: {X_unseen.shape}\")\n\
+          \n        # Make predictions\n        y_pred_unseen = knn.predict(X_unseen)\n\
+          \        y_pred_proba = knn.predict_proba(X_unseen)\n\n        # Convert\
+          \ predictions back to frame style names\n        predicted_styles = label_encoder_obj.inverse_transform(y_pred_unseen)\n\
+          \n        # Create results DataFrame\n        results_df = pd.DataFrame({\n\
+          \            \"Frame_Description\": descriptions,\n            \"Predicted_Frame_Style\"\
+          : predicted_styles,\n            \"Confidence\": np.max(y_pred_proba, axis=1)\n\
+          \        })\n\n        # Add probability scores for each class\n       \
+          \ for i, class_name in enumerate(class_names):\n            results_df[f\"\
+          Prob_{class_name}\"] = y_pred_proba[:, i]\n\n        print(f\"Predictions\
+          \ complete for {len(results_df)} unseen frames\")\n        print(f\"Predicted\
+          \ frame styles: {results_df['Predicted_Frame_Style'].value_counts().to_dict()}\"\
+          )\n\n        # Save results locally\n        local_results_path = \"/tmp/predictions_output.csv\"\
+          \n        results_df.to_csv(local_results_path, index=False)\n\n       \
+          \ # Upload to MinIO\n        s3_client.upload_file(\n            local_results_path,\
+          \ bucket_name, f\"results/{predictions_output_filename}\"\n        )\n\n\
+          \        print(f\"Results saved to MinIO: results/{predictions_output_filename}\"\
+          )\n    else:\n        raise Exception(\"Failed to generate embeddings for\
+          \ unseen data\")\n\n"
         image: registry.redhat.io/ubi8/python-39:latest
     exec-train-model:
       container:
@@ -445,7 +437,7 @@ deploymentSpec:
           ) as f:\n        label_encoder_obj = pickle.load(f)\n\n    class_names =\
           \ label_encoder_obj.classes_\n\n    print(f\"Dataset info:\")\n    print(f\"\
           \   - Total samples: {len(X)}\")\n    print(f\"   - Embedding dimension:\
-          \ {X.shape[1]}\")\n    print(f\"   - Number of countries: {len(class_names)}\"\
+          \ {X.shape[1]}\")\n    print(f\"   - Number of frame styles: {len(class_names)}\"\
           )\n\n    # Split data for training and testing\n    X_train, X_test, y_train,\
           \ y_test = train_test_split(\n        X, y, test_size=0.2, random_state=42,\
           \ stratify=y\n    )\n    print(f\"Split data: {len(X_train)} train, {len(X_test)}\
@@ -457,15 +449,17 @@ deploymentSpec:
           \ {accuracy:.1%}\")\n\n    # Save model\n    joblib.dump(knn, trained_model.path)\n\
           \n    # Save test data for evaluation\n    test_data = {\n        \"X_test\"\
           : X_test.tolist(),\n        \"y_test\": y_test.tolist(),\n        \"y_pred\"\
-          : y_pred.tolist(),\n        \"accuracy\": accuracy,\n    }\n\n    with open(test_results.path,\
-          \ \"wb\") as f:\n        pickle.dump(test_data, f)\n\n    # Log metrics\n\
-          \    metrics.log_metric(\"accuracy\", accuracy)\n    metrics.log_metric(\"\
-          test_samples\", len(X_test))\n    metrics.log_metric(\"num_classes\", len(class_names))\n\
-          \n    print(\"Model training complete\")\n\n"
+          : y_pred.tolist(),\n        \"class_names\": class_names.tolist(),\n   \
+          \ }\n\n    with open(test_results.path, \"wb\") as f:\n        pickle.dump(test_data,\
+          \ f)\n\n    # Log metrics\n    metrics.log_metric(\"accuracy\", accuracy)\n\
+          \    metrics.log_metric(\"training_samples\", len(X_train))\n    metrics.log_metric(\"\
+          test_samples\", len(X_test))\n    metrics.log_metric(\"embedding_dimension\"\
+          , X.shape[1])\n    metrics.log_metric(\"num_classes\", len(class_names))\n\
+          \n    print(\"Model training and evaluation complete\")\n\n"
         image: registry.redhat.io/ubi8/python-39:latest
 pipelineInfo:
-  description: Electronics parts country of origin prediction using BGE-Large embeddings
-  name: electronics-embedding-pipeline
+  description: VSP eyeglass frame style prediction using BGE-Large embeddings
+  name: vsp-eyeglass-frame-pipeline
 root:
   dag:
     tasks:
@@ -609,31 +603,31 @@ root:
         isOptional: true
         parameterType: STRING
       bucket_name:
-        defaultValue: pipeline
+        defaultValue: vsp
         isOptional: true
         parameterType: STRING
       data_filename:
-        defaultValue: synthetic_electronics_parts_1k.csv
+        defaultValue: synthetic_eyeglass_frames_1k.csv
         isOptional: true
         parameterType: STRING
       embedding_model:
-        defaultValue: ''
+        defaultValue: bge-large
         isOptional: true
         parameterType: STRING
       endpoint:
-        defaultValue: ''
+        defaultValue: https://bge-large-vsp-embedding-demo.apps.cluster-5qlcr.5qlcr.sandbox1342.opentlc.com
         isOptional: true
         parameterType: STRING
       minio_access_key:
-        defaultValue: ''
+        defaultValue: admin
         isOptional: true
         parameterType: STRING
       minio_endpoint:
-        defaultValue: ''
+        defaultValue: https://minio-api-default.apps.cluster-5qlcr.5qlcr.sandbox1342.opentlc.com
         isOptional: true
         parameterType: STRING
       minio_secret_key:
-        defaultValue: ''
+        defaultValue: aeadmin123
         isOptional: true
         parameterType: STRING
       predictions_output_filename:
@@ -641,7 +635,7 @@ root:
         isOptional: true
         parameterType: STRING
       unseen_data_filename:
-        defaultValue: unseen_electronics_parts.csv
+        defaultValue: unseen_eyeglass_frames.csv
         isOptional: true
         parameterType: STRING
 schemaVersion: 2.1.0

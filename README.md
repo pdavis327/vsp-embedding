@@ -63,6 +63,18 @@ vsp-embedding/
 - GPU resources available (for vLLM inference)
 - MinIO or S3-compatible storage
 
+### Pipeline Compilation
+
+Before running the pipeline in OpenShift AI, you need to compile it to YAML format:
+
+```bash
+cd pipeline
+pip install -r requirements.txt
+python compiler.py
+```
+
+This will generate the `vsp_eyeglass_frame_pipeline.yaml` file that can be uploaded to OpenShift AI.
+
 ## 📊 Data Generation
 
 The project includes synthetic data generation for eyeglass frames:
@@ -78,7 +90,7 @@ The synthetic data includes:
 - **Realistic frame types**: metal frames, acetate frames, wire frames, rimless frames, etc.
 
 ## Notebook
-[vsp demo notebook](app/notebooks/vsp_demo.ipynb).
+[Frame style prediction notebook](app/notebooks/Frame_style_prediction.ipynb).
 - Run in a jupyterlab notebook in an Openshift AI workbench for the live demo. 
 - Uses a [custom notebook image](app/scripts/images)
 

@@ -5,7 +5,7 @@ Compiler script for the electronics embedding pipeline
 """
 
 import kfp
-from electronics_embedding_pipeline import electronics_embedding_pipeline
+from vsp_eyeglass_frame_pipeline import vsp_eyeglass_frame_pipeline
 
 
 def compile_pipeline():
@@ -13,8 +13,8 @@ def compile_pipeline():
 
     # Compile the pipeline
     kfp.compiler.Compiler().compile(
-        pipeline_func=electronics_embedding_pipeline,
-        package_path="electronics_embedding_pipeline.yaml",
+        pipeline_func=vsp_eyeglass_frame_pipeline,
+        package_path="vsp_eyeglass_frame_pipeline.yaml",
     )
 
     print(" Pipeline compiled successfully!")
