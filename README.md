@@ -126,7 +126,7 @@ The synthetic data includes:
 
 ## 🎯 Model Performance
 The KNN classifier typically achieves:
-- **Accuracy**: ~95% on test data
+- **Accuracy**: ~98% on test data
 - **Embedding dimension**: 1024 (BGE-Large)
 - **Training samples**: 800 (80% of dataset)
 - **Test samples**: 200 (20% of dataset)
